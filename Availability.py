@@ -37,7 +37,7 @@ def green():
 def yellow():
     #Sets lights to yellow
     com = '{"on":true, "sat":254, "bri":75,"hue":9999}'
-    color = "yellow`"
+    color = "yellow"
     requests.put(hue_url,data = com)
     requests.post(lux_url,data=body+color+'" } }',headers = header)
 
