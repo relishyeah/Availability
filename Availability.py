@@ -26,13 +26,13 @@ def lux_body(hex):
     return '{"userId": "'+lux_id +'",  "actionFields":{    "color": "custom",\
     "custom_color": "' + hex + '"} }'
 
-def rec_to_hue(rec):
-    #converts config file to hue  request
-    r,g,b = rec
-    ret = '{"on":true,'
-    ret += '"xy":'+str(list((converter.rgb_to_xy(r,g,b))))+','
-    ret +='"bri":127}'
-    return ret
+def con_to_hue(config):
+    #converts config file to hue request format
+    r,g,b = config
+    hue = '{"on":true,'
+    hue += '"xy":'+str(list((converter.rgb_to_xy(r,g,b))))+','
+    hue +='"bri":127}'
+    return hue
 
 #Initialization of actions from config.json
 
@@ -42,14 +42,13 @@ def off():
     requests.post(lux_url,data=lux_body('000000'),headers = header)
 
 def rgb_to_hex(rgb):
-    #same as above but not for tkinter button,for lux
-    #NOTE: No hashmark
+    #Converts RGB to hex  format
     return ("%02x%02x%02x" % (rgb[0],rgb[1],rgb[2]))
 
 def press(num):
-    #sends reqyuests when button is pressed
+    #sends requests when button is pressed, based off config
     rgb = colors[num][1]
-    hue = rec_to_hue(rgb)
+    hue = con_to_hue(rgb)
     lux = lux_body(rgb_to_hex(rgb))
 
     requests.put(hue_url,data = hue)
@@ -60,9 +59,9 @@ root = tk.Tk()
 root.grid()
 root.title("Availability")
 helv = tkFont.Font(family='Helvetica', size=14)
-
 root.resizable(False, False )
 
+#Dynamic Button Creation
 for i in range(len(colors)):
 
     invert = [255-j for j in colors[i][1]]
@@ -76,4 +75,3 @@ for i in range(len(colors)):
 
 root.mainloop()
 off()
-
