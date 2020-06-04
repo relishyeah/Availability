@@ -1,79 +1,77 @@
 import requests,time,tkinter as tk
 from tkinter import font as tkFont 
 import json
+from rgbxy import Converter
+from rgbxy import GamutC
 
 #Imports sensitive information from secret.py file
 with open('secret.json') as json_file:
-    data = json.load(json_file)
-hue_url = data["hue_url"]
+    secret = json.load(json_file)
+hue_url = secret["hue_url"]
 lux_url = 'https://api.luxafor.com/webhook/v1/actions/solid_color'
-lux_id = data["lux_id"]
+lux_id = secret["lux_id"]
+
+#Load colors as defined by user
+with open('config.json') as json_file:
+    config = json.load(json_file)
+colors= [[col,config[col]] for col in config]
 
 #Information for Luxafor Webhook requests
 header = {'Content-Type': 'application/json'}
-body ='{"userId": "'+lux_id +'" , "actionFields":{ "color": "'
-off_body = '{"userId": "'+lux_id +'",  "actionFields":{    "color": "custom",\
-    "custom_color": "000000"} }'
+
+converter = Converter(GamutC)
+
+def lux_body(hex):
+    #Body for Luxafor Requests
+    return '{"userId": "'+lux_id +'",  "actionFields":{    "color": "custom",\
+    "custom_color": "' + hex + '"} }'
+
+def con_to_hue(config):
+    #converts config file to hue request format
+    r,g,b = config
+    hue = '{"on":true,'
+    hue += '"xy":'+str(list((converter.rgb_to_xy(r,g,b))))+','
+    hue +='"bri":127}'
+    return hue
+
+#Initialization of actions from config.json
 
 def off():
     #Sets lights to off
     requests.put(hue_url,data = '{"on":false}')
-    requests.post(lux_url,data=off_body,headers = header)
-    
-def red():
-    #Sets lights to red
-    com = '{"on":true, "sat":254, "bri":50,"hue":0}'
-    color = "red"
-    requests.put(hue_url,data = com)
-    requests.post(lux_url,data=body+color+'" } }',headers = header)
+    requests.post(lux_url,data=lux_body('000000'),headers = header)
 
-def green():
-    #Sets lights to green
-    com = '{"on":true, "sat":254, "bri":50,"hue":20000}'
-    color = "green"
-    requests.put(hue_url,data = com)
-    requests.post(lux_url,data=body+color+'" } }',headers = header)
+def rgb_to_hex(rgb):
+    #Converts RGB to hex  format
+    return ("%02x%02x%02x" % (rgb[0],rgb[1],rgb[2]))
 
-def yellow():
-    #Sets lights to yellow
-    com = '{"on":true, "sat":254, "bri":75,"hue":9999}'
-    color = "yellow"
-    requests.put(hue_url,data = com)
-    requests.post(lux_url,data=body+color+'" } }',headers = header)
+def press(num):
+    #sends requests when button is pressed, based off config
+    rgb = colors[num][1]
+    hue = con_to_hue(rgb)
+    lux = lux_body(rgb_to_hex(rgb))
 
-def loop(i,s):
-    #takes number of iterations, seconds between change
-    #loops through colors
-    for i in range(i):
-        red()
-        time.sleep(s)
-        green()
-        time.sleep(s)
-        yellow()
-        time.sleep(s)
+    requests.put(hue_url,data = hue)
+    requests.post(lux_url,data=lux,headers = header)
 
 #Tkinter information
 root = tk.Tk()
-root.geometry("540x200")
+root.grid()
 root.title("Availability")
-
-helv22 = tkFont.Font(family='Helvetica', size=14)
-
+helv = tkFont.Font(family='Helvetica', size=14)
 root.resizable(False, False )
 
-G = tk.Button(root, bg='green', width=15, command=green)
-G.pack( padx=10,pady=37, side=tk.LEFT,fill=tk.Y)
+#Dynamic Button Creation
+for i in range(len(colors)):
 
-Y = tk.Button(root, bg = 'yellow', width=15, command=yellow)
-Y.pack(padx=10,pady=37, side=tk.LEFT,fill=tk.Y)
+    invert = [255-j for j in colors[i][1]]
 
-R = tk.Button(root, bg='red', width=15, command=red)
-R.pack( padx=10,pady=37, side=tk.LEFT,fill=tk.BOTH)
-
-o = tk.Button(root, bg = 'royalblue1',fg = 'black',text='Off', width=9, command=off)
-o.pack(padx=10,pady=37, side=tk.LEFT,fill=tk.BOTH)
-
-o['font'] = helv22
+    bg = "#" + str(rgb_to_hex(colors[i][1]))
+    fg = "#" + str(rgb_to_hex(invert))
+    button = tk.Button(root, text=colors[i][0],bg=bg,fg=fg,width=10,height=4,
+        command = lambda j = i: press(j))
+    button.pack(side=tk.LEFT,pady=3,padx=3)
+    button['font'] = helv
 
 root.mainloop()
 off()
