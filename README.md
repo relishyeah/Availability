@@ -24,4 +24,5 @@ To add or remove colors, simply add or delete comma separated lines in the forma
 ### Controlling lights
 
 1. To turn on lights, run the program, click a button to change the lights to that color
-2. To turn off the lights, close the program.
+2. To turn off the lights, click the last selected light or close the program
+3. Press `F5` to reload from config and get updated colors.
